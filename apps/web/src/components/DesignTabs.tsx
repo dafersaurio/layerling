@@ -59,11 +59,5 @@ export function DesignTabs<Id extends string>({ tabs, active, onSelect, children
 
 /** Over the browser's designs: they live nowhere else, so a notice says so. */
 export function BrowserBackupNote() {
-  return (
-    <p className="browser-backup-note">
-      <ShieldAlert size={24} aria-hidden="true" />
-      <span>{t("storageNotice.line", { button: t("dashboard.backupAll") })}</span>
-      <GuideHelpLink chapter="files" section="backingUp" className="browser-backup-help" iconSize={18} />
-    </p>
-  );
+  return null;
 }

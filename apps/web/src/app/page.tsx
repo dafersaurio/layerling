@@ -1203,10 +1203,16 @@ export default function Home() {
     }
 
     const params = new URLSearchParams(window.location.search);
-    if (params.has("codexBooleanCase") || params.get("editor") === "1") {
-      const requestedProjectId = params.get("project");
-      if (requestedProjectId && storedProjects.some((project) => project.id === requestedProjectId)) {
-        setActiveProjectId(requestedProjectId);
+    const requestedProjectId = params.get("project");
+    if (requestedProjectId && storedProjects.some((project) => project.id === requestedProjectId)) {
+      setActiveProjectId(requestedProjectId);
+      startEditorTransition();
+      setEditorStarted(true);
+      setView("editor");
+    } else if (params.has("codexBooleanCase") || params.get("editor") === "1" || params.get("dashboard") !== "1") {
+      if (storedProjects.length > 0) {
+        const latest = [...storedProjects].sort((a, b) => b.updatedAt - a.updatedAt)[0];
+        setActiveProjectId(latest.id);
       }
       startEditorTransition();
       setEditorStarted(true);
@@ -1343,7 +1349,7 @@ export default function Home() {
     setActiveProjectId(null);
     setView("dashboard");
     if (typeof window !== "undefined") {
-      window.history.replaceState(null, "", "/");
+      window.history.replaceState(null, "", "/?dashboard=1");
     }
   }, [activeProjectId, projects]);
 
@@ -1487,7 +1493,7 @@ export default function Home() {
         setProjects(storedProjects);
         setActiveProjectId(null);
         setView("dashboard");
-        window.history.replaceState(null, "", "/");
+        window.history.replaceState(null, "", "/?dashboard=1");
         return;
       }
       setProjects(storedProjects.map((project) => (project.id === projectId ? { ...project, updatedAt: Date.now() } : project)));
@@ -2587,7 +2593,7 @@ export default function Home() {
     setEditorLoading(false);
     setView("dashboard");
     if (typeof window !== "undefined") {
-      window.history.replaceState(null, "", "/");
+      window.history.replaceState(null, "", "/?dashboard=1");
     }
   };
 
@@ -3561,34 +3567,6 @@ function Dashboard({
 
       <div className="dashboard-layout">
         <section className={`dashboard-main${hasProjects ? " has-projects" : ""}`} aria-label={activeSection === "shared" ? t("shared.title") : t("dashboard.projects")}>
-          {update && !isDismissed && !simpleMode ? (
-            <aside
-              className="dashboard-update-notice"
-              role="status"
-              aria-label={t("dashboard.updateAvailable", { version: update.latestVersion })}
-            >
-              <div className="dashboard-update-notice-content">
-                <Sparkles size={18} className="dashboard-update-icon" aria-hidden="true" />
-                <span>{t("dashboard.updateBannerText", { current: LYL_CREATED_WITH_VERSION, latest: update.latestVersion })}</span>
-                <a href={update.releaseUrl} target="_blank" rel="noreferrer" className="dashboard-update-link">
-                  {t("dashboard.updateBannerLink")}
-                </a>
-              </div>
-              <button
-                type="button"
-                className="dashboard-update-dismiss"
-                onClick={dismissUpdate}
-                aria-label={t("dashboard.updateDismiss")}
-                title={t("dashboard.updateDismiss")}
-              >
-                <X size={16} />
-              </button>
-              <UpdatePreview update={update} currentVersion={LYL_CREATED_WITH_VERSION} />
-            </aside>
-          ) : null}
-          {welcome.hidden === false && !simpleMode ? (
-            <DashboardWelcome open={(!hasProjects && !sharedTotal) || welcomeReopened} offline={offlineOk} onHide={welcome.hide} />
-          ) : null}
           {/* Order follows what someone actually does: start something new,
               pick up where they left off, open something that exists. The
               same three on both tabs: they do not depend on where designs live. */}
@@ -3619,9 +3597,6 @@ function Dashboard({
               {dashboardNotice}
             </div>
           ) : null}
-          {whatsNew.view && !simpleMode ? <WhatsNewCard view={whatsNew.view} current={LYL_CREATED_WITH_VERSION} onClose={whatsNew.dismiss} /> : null}
-          {simpleMode ? null : <InstallAppHint />}
-          {simpleMode ? null : <TabletHint />}
           <DesignTabs tabs={designTabs} active={activeSection} onSelect={onSelectSection}>
             {activeSection === "shared" ? (
               <button className="dashboard-select dashboard-backup-button" type="button" onClick={() => onRefreshSharedProjects()} disabled={sharedProjectsLoading}>
@@ -4701,24 +4676,5 @@ function ProjectPreview({ accent, thumbnailUrl, loading = false }: { accent: Das
  * the app replaces it.
  */
 function StaticIntro() {
-  return (
-    // Hidden text for search engines and link previews, in both languages. Chrome read the German
-    // half as a page to translate and offered it on every load, even in English (#191). Kept out
-    // of translation, it still counted when Chrome guessed the page's language - so the German
-    // half sits in <noscript>: crawlers and link previews without JavaScript read it as text, a
-    // browser never draws it and Chrome's guess no longer sees it.
-    <main className="visually-hidden notranslate" translate="no">
-      <h1>layerling - Free 3D CAD for 3D printing in your browser</h1>
-      <section lang="en">
-        <h2>{translate("en", "welcome.teaserTitle")}</h2>
-        <WelcomeGuideBody tr={(key) => translate("en", key)} />
-      </section>
-      <noscript>
-        <section lang="de">
-          <h2>{translate("de", "welcome.teaserTitle")}</h2>
-          <WelcomeGuideBody tr={(key) => translate("de", key)} />
-        </section>
-      </noscript>
-    </main>
-  );
+  return null;
 }

@@ -7,9 +7,9 @@ node_modules/
 .next/
 .next-dev/
 .next-export/
-out/
-build/
-dist/
+/out/
+/build/
+/dist/
 
 # Operator pages: the legal notice and privacy policy belong to whoever runs an
 # installation, not to the project. Dropped into public/ they are picked up by
@@ -100,3 +100,12 @@ apps/web/public/fonts/japanese/
 
 # Built European Portuguese user guide.
 apps/web/public/guia-pt-pt/
+
+# Desktop Electron & DMG packaging
+desktop/web/
+desktop/dist/
+desktop/node_modules/
+dist/
+!desktop/build/icon.icns
+
+

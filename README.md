@@ -5,14 +5,46 @@
         <img src="apps/web/public/assets/layerling/layerling-logo.svg" width="110" alt="layerling logo">
       </td>
       <td>
-        <h1 align="right">layerling</h1>
-        <h3 align="right">Easy 3D CAD for 3D printing</h3>
+        <h1 align="right">Layerling Desktop (Minimalist CAD)</h1>
+        <h3 align="right">100% Local 3D CAD for macOS · Distraction-Free Edition</h3>
         <p align="right">
-          Drop a shape, cut a hole, round an edge, print it. In your browser, with no account and no CAD background.
+          A standalone desktop fork of <a href="https://github.com/henmedia/layerling">Layerling</a>. Boots straight into the 3D CAD canvas with all tutorial clutter, banners, and external guide links removed. 100% offline and privacy-first.
         </p>
       </td>
     </tr>
   </table>
+
+  <p>
+    <a href="LICENSE"><img alt="GNU AGPLv3 license" src="https://img.shields.io/badge/license-AGPLv3-663399"></a>
+    <img alt="macOS Apple Silicon" src="https://img.shields.io/badge/macOS-Apple%20Silicon%20(arm64)-000000?logo=apple">
+    <img alt="100% Offline" src="https://img.shields.io/badge/offline-100%25%20local-success">
+    <img alt="Pure CAD" src="https://img.shields.io/badge/UI-distraction--free-blue">
+  </p>
+
+  <p><strong>Forked from <a href="https://github.com/henmedia/layerling">henmedia/layerling</a> under GNU AGPLv3.</strong></p>
+</div>
+
+---
+
+### ✨ Features of this Desktop Fork
+* 🚀 **Direct-to-CAD Startup:** Boots directly into an active 3D CAD workspace. No welcome screens, no tutorials to click through.
+* 🧼 **De-cluttered Interface:** All guide links (`?`), tutorial overlays, backup warning banners, and promotional footers have been stripped out. Only pure CAD design remains.
+* 📦 **Standalone macOS `.dmg`:** Packaged natively with Electron and an embedded zero-configuration loopback server. Supports OpenCASCADE WebAssembly (`occt-wasm`) and `manifold-3d` kernels 100% offline.
+* 💾 **Local Persistence:** Projects are saved locally and securely via native persistent storage without requiring accounts or cloud synchronization.
+
+### 🛠️ Building the macOS DMG Locally
+```bash
+# 1. Install dependencies
+npm install
+
+# 2. Build the static web app and bundle into macOS DMG installer
+npm run desktop:build
+
+# The installer will be generated at:
+# dist/Layerling.dmg
+```
+
+---
 
   <p>
     <a href="LICENSE"><img alt="GNU AGPLv3 license" src="https://img.shields.io/badge/license-AGPLv3-663399"></a>
