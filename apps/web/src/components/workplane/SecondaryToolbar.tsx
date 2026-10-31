@@ -1586,14 +1586,8 @@ export function SecondaryToolbar({
               <button className="action-icon-button" type="button" aria-label={t("palette.open")} title={t("palette.open")} aria-haspopup="dialog" data-layerling-tool="command-search" onClick={openPalette}>
                 <Search className="toolbar-search-icon" aria-hidden="true" />
               </button>
-              <button className="action-icon-button" type="button" aria-label={t("editor.guide")} title={t("editor.guide")} onClick={onGuide}>
-                <ToolbarGuideIcon />
-              </button>
               <button className="action-icon-button" type="button" aria-label={t("editor.keyboardShortcuts")} title={t("editor.keyboardShortcuts")} onClick={onShortcuts}>
                 <ToolbarKeyboardIcon />
-              </button>
-              <button className={`action-icon-button ${interactiveHelpActive ? "active" : ""}`} type="button" aria-label={t("interactiveHelp.title")} title={`${t("interactiveHelp.title")} (${COMMAND_SHORTCUTS["interactive-help"]})`} aria-pressed={interactiveHelpActive} data-layerling-tool="interactive-help" data-help-exempt onClick={onInteractiveHelp}>
-                <CircleHelp className="toolbar-search-icon" aria-hidden="true" />
               </button>
             </div>
           )}

@@ -1,0 +1,66 @@
+{
+  "name": "layerling",
+  "productName": "Layerling",
+  "version": "1.129.1",
+  "description": "Easy 3D CAD for 3D printing - 100% Local Desktop Edition",
+  "author": "Layerling Contributors",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:dmg": "electron-builder --mac dmg --arm64"
+  },
+  "devDependencies": {
+    "electron": "^39.0.0",
+    "electron-builder": "^25.1.8",
+    "mime-types": "^2.1.35"
+  },
+  "dependencies": {
+    "mime-types": "^2.1.35"
+  },
+  "build": {
+    "appId": "com.layerling.cad",
+    "productName": "Layerling",
+    "copyright": "Copyright © 2026 Layerling Contributors",
+    "asar": true,
+    "directories": {
+      "output": "dist"
+    },
+    "mac": {
+      "category": "public.app-category.graphics-design",
+      "icon": "build/icon.icns",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["arm64"]
+        }
+      ],
+      "identity": null
+    },
+    "dmg": {
+      "title": "Layerling CAD Installer",
+      "contents": [
+        {
+          "x": 130,
+          "y": 200
+        },
+        {
+          "x": 410,
+          "y": 200,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ],
+      "window": {
+        "width": 540,
+        "height": 380
+      }
+    },
+    "files": [
+      "main.js",
+      "web/**/*",
+      "build/icon.icns",
+      "node_modules/mime-types/**/*",
+      "node_modules/mime-db/**/*"
+    ]
+  }
+}
