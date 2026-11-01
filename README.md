@@ -72,10 +72,10 @@ npm run desktop:build
 </div>
 
 <p align="center">
-  <img src="docs/media/screenshot-en.png" width="763" alt="layerling in the browser">
+  <img src="docs/media/screenshot-desktop.jpg" width="850" alt="Layerling Desktop on macOS">
 </p>
 
-<p align="center"><em>layerling in the browser</em></p>
+<p align="center"><em>Layerling Desktop running on macOS (100% Native, Offline & Trackpad-Optimized)</em></p>
 
 <p align="center"><a href="https://layerling.com/guide/index.html"><strong>User guide</strong></a>, step by step and with pictures</p>
 
