@@ -1,16 +1,26 @@
-const { app, BrowserWindow, Menu, shell, dialog, session } = require('electron');
+const { app, BrowserWindow, Menu, shell, session, protocol, net } = require('electron');
 const path = require('node:path');
-const http = require('node:http');
 const fs = require('node:fs');
-const mime = require('mime-types');
+const { pathToFileURL } = require('node:url');
 
 // Base directory for static files
 const WEB_DIR = path.join(__dirname, 'web');
-const PREFERRED_PORT = 39281;
+
+// Register custom 'app' scheme as standard and secure BEFORE app is ready
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'app',
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      corsEnabled: true,
+      stream: true,
+    },
+  },
+]);
 
 let mainWindow = null;
-let server = null;
-let serverPort = PREFERRED_PORT;
 
 // Enforce single instance so multiple launches focus the existing app
 const gotTheLock = app.requestSingleInstanceLock();
@@ -25,99 +35,46 @@ if (!gotTheLock) {
   });
 }
 
-function startLocalServer() {
-  return new Promise((resolve, reject) => {
-    server = http.createServer((req, res) => {
-      try {
-        const parsedUrl = new URL(req.url, `http://127.0.0.1:${serverPort}`);
-        let decodedPath = decodeURIComponent(parsedUrl.pathname);
+function setupProtocol() {
+  protocol.handle('app', (request) => {
+    const parsedUrl = new URL(request.url);
+    let decodedPath = decodeURIComponent(parsedUrl.pathname);
 
-        // Security check: prevent directory traversal
-        let filePath = path.normalize(path.join(WEB_DIR, decodedPath));
-        const rel = path.relative(WEB_DIR, filePath);
-        if (rel.startsWith('..') || path.isAbsolute(rel)) {
-          res.writeHead(403);
-          res.end('Access Denied');
-          return;
+    // Security check: prevent directory traversal
+    let filePath = path.normalize(path.join(WEB_DIR, decodedPath));
+    const rel = path.relative(WEB_DIR, filePath);
+    if (rel.startsWith('..') || path.isAbsolute(rel)) {
+      return new Response('Access Denied', { status: 403 });
+    }
+
+    // Check if path is a directory or lacks extension (Next.js trailing slash routing)
+    if (fs.existsSync(filePath)) {
+      const stat = fs.statSync(filePath);
+      if (stat.isDirectory()) {
+        const indexHtml = path.join(filePath, 'index.html');
+        if (fs.existsSync(indexHtml)) {
+          filePath = indexHtml;
         }
-
-        // Check if path is a directory or lacks extension
-        if (fs.existsSync(filePath)) {
-          const stat = fs.statSync(filePath);
-          if (stat.isDirectory()) {
-            const indexHtml = path.join(filePath, 'index.html');
-            if (fs.existsSync(indexHtml)) {
-              filePath = indexHtml;
-            }
-          }
-        } else {
-          // If file doesn't exist, try adding .html or /index.html (Next.js trailing slash routing)
-          if (fs.existsSync(`${filePath}.html`)) {
-            filePath = `${filePath}.html`;
-          } else if (fs.existsSync(path.join(filePath, 'index.html'))) {
-            filePath = path.join(filePath, 'index.html');
-          } else if (!path.extname(decodedPath)) {
-            // Only fallback to index.html for extension-less client routes (SPA)
-            filePath = path.join(WEB_DIR, 'index.html');
-          } else {
-            res.writeHead(404, { 'Content-Type': 'text/plain' });
-            res.end('Not Found');
-            return;
-          }
-        }
-
-        if (!fs.existsSync(filePath)) {
-          res.writeHead(404, { 'Content-Type': 'text/plain' });
-          res.end('Not Found');
-          return;
-        }
-
-        const stat = fs.statSync(filePath);
-        const mimeType = mime.lookup(filePath) || 'application/octet-stream';
-
-        const headers = {
-          'Content-Type': mimeType,
-          'Content-Length': stat.size,
-          'Cross-Origin-Opener-Policy': 'same-origin',
-          'Cross-Origin-Embedder-Policy': 'credentialless',
-          'Access-Control-Allow-Origin': '*',
-          'Cache-Control': 'no-cache',
-        };
-
-        res.writeHead(200, headers);
-        const stream = fs.createReadStream(filePath);
-        stream.pipe(res);
-      } catch (err) {
-        console.error('Server error:', err);
-        res.writeHead(500);
-        res.end('Internal Server Error');
       }
-    });
+    } else {
+      // If file doesn't exist, try adding .html or /index.html (Next.js SPA routing)
+      if (fs.existsSync(`${filePath}.html`)) {
+        filePath = `${filePath}.html`;
+      } else if (fs.existsSync(path.join(filePath, 'index.html'))) {
+        filePath = path.join(filePath, 'index.html');
+      } else if (!path.extname(decodedPath)) {
+        filePath = path.join(WEB_DIR, 'index.html');
+      } else {
+        return new Response('Not Found', { status: 404 });
+      }
+    }
 
-    const tryListen = (port, retriesLeft = 10) => {
-      const onError = (err) => {
-        server.removeListener('listening', onListening);
-        if (err.code === 'EADDRINUSE' && retriesLeft > 0) {
-          console.warn(`Layerling port ${port} busy, trying port ${port + 1}...`);
-          tryListen(port + 1, retriesLeft - 1);
-        } else {
-          reject(err);
-        }
-      };
+    if (!fs.existsSync(filePath)) {
+      return new Response('Not Found', { status: 404 });
+    }
 
-      const onListening = () => {
-        server.removeListener('error', onError);
-        serverPort = server.address().port;
-        console.log(`Layerling local server running at http://127.0.0.1:${serverPort}`);
-        resolve(serverPort);
-      };
-
-      server.once('error', onError);
-      server.once('listening', onListening);
-      server.listen(port, '127.0.0.1');
-    };
-
-    tryListen(PREFERRED_PORT);
+    // Natively stream the requested file using Electron's high-performance net.fetch
+    return net.fetch(pathToFileURL(filePath).toString());
   });
 }
 
@@ -206,13 +163,13 @@ function createMenu() {
   Menu.setApplicationMenu(menu);
 }
 
-async function createWindow(port) {
+async function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
     minWidth: 900,
     minHeight: 600,
-    show: false, // Prevents showing until initial paint is complete (no white/black flash or unstyled blur)
+    show: false, // Prevents showing until initial paint is complete
     title: 'Layerling - 3D CAD',
     icon: path.join(__dirname, 'build', 'icon.icns'),
     backgroundColor: '#fafaf9',
@@ -238,15 +195,14 @@ async function createWindow(port) {
   // Open external links in default browser
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith('http://') || url.startsWith('https://')) {
-      if (!url.startsWith(`http://127.0.0.1:${port}`)) {
-        shell.openExternal(url);
-        return { action: 'deny' };
-      }
+      shell.openExternal(url);
+      return { action: 'deny' };
     }
     return { action: 'allow' };
   });
 
-  await mainWindow.loadURL(`http://127.0.0.1:${port}`);
+  // Load purely from internal native app:// protocol (NO localhost, NO TCP ports)
+  await mainWindow.loadURL('app://layerling/index.html');
 
   mainWindow.on('closed', () => {
     mainWindow = null;
@@ -273,15 +229,15 @@ function setupDownloads() {
 }
 
 app.whenReady().then(async () => {
+  setupProtocol();
   createMenu();
   setupDownloads();
   try {
-    const port = await startLocalServer();
-    await createWindow(port);
+    await createWindow();
 
     app.on('activate', async () => {
       if (BrowserWindow.getAllWindows().length === 0) {
-        await createWindow(port);
+        await createWindow();
       }
     });
   } catch (err) {
@@ -292,13 +248,6 @@ app.whenReady().then(async () => {
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
-    if (server) server.close();
     app.quit();
-  }
-});
-
-app.on('before-quit', () => {
-  if (server) {
-    server.close();
   }
 });
