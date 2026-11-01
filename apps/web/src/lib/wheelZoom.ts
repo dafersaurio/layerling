@@ -40,11 +40,27 @@ export function pinchWheelDelta(ratio: number, zoomSpeed: number): number | null
   return Math.abs(step) < 1e-3 ? null : -step;
 }
 
-export function wheelZoomDelta(event: { deltaY: number; deltaMode: number; ctrlKey: boolean }, msSinceLastWheel: number): number {
+/**
+ * Detects whether a wheel event originates from a trackpad (such as Apple Magic Trackpad or MacBook trackpad).
+ * Trackpads send pixel deltaMode (0), fractional deltas, horizontal deltas, or small continuous streams.
+ * Traditional mouse wheels send integer notches (e.g. 100, 120) or line/page modes.
+ */
+export function isTrackpadWheel(event: { deltaX?: number; deltaY: number; deltaMode: number; ctrlKey?: boolean }): boolean {
+  if (event.ctrlKey) return true; // Trackpad pinch gesture
+  if (event.deltaMode !== 0) return false; // Mouse line/page wheel
+  if (event.deltaX !== undefined && Math.abs(event.deltaX) > 0) return true; // Multi-axis scroll is trackpad
+  if (!Number.isInteger(event.deltaY)) return true; // Fractional delta is trackpad
+  if (Math.abs(event.deltaY) < 30) return true; // Small continuous gesture step
+  return false;
+}
+
+export function wheelZoomDelta(event: { deltaX?: number; deltaY: number; deltaMode: number; ctrlKey: boolean }, msSinceLastWheel: number): number {
   if (event.ctrlKey && event.deltaMode === 0 && Math.abs(event.deltaY) < WHEEL_NOTCH_DELTA) return event.deltaY * PINCH_WHEEL_FACTOR;
   if (event.deltaMode === 1) return event.deltaY * WHEEL_LINE_DELTA;
   if (event.deltaMode === 2) return event.deltaY * WHEEL_PAGE_DELTA;
   if (event.ctrlKey) return event.deltaY;
+  // If event is coming from a Mac trackpad or touch surface, never jump by 100 on the first frame!
+  if (isTrackpadWheel(event)) return event.deltaY;
   const size = Math.abs(event.deltaY);
   if (size === 0 || size >= WHEEL_NOTCH_DELTA) return event.deltaY;
   if (!(msSinceLastWheel >= WHEEL_ALONE_GAP_MS)) return event.deltaY;

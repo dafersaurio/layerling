@@ -335,6 +335,38 @@ export function createThreeScene(host: HTMLDivElement): ThreeState {
     }));
   };
   const SAFARI_GESTURES = ["gesturestart", "gesturechange", "gestureend"] as const;
+  // --- Mac Trackpad Gesture Optimization ---
+  const handleTrackpadGestures = (event: WheelEvent) => {
+    // 1. Two-finger Pan with Shift:
+    // Holding Shift while gliding two fingers smoothly pans the 3D scene (like Blender, Fusion 360, Tinkercad)
+    if (event.shiftKey && !event.ctrlKey) {
+      if (event.cancelable) event.preventDefault();
+      event.stopImmediatePropagation();
+      const panFactor = 0.75;
+      controls.pan(-event.deltaX * panFactor, -event.deltaY * panFactor);
+      requestRender();
+      return;
+    }
+
+    // 2. Two-finger Orbit with Option (Alt) or Cmd:
+    // Holding Option (⌥) while gliding two fingers orbits the 3D view around the model without clicking
+    if ((event.altKey || (event.metaKey && !event.ctrlKey)) && !event.shiftKey) {
+      if (event.cancelable) event.preventDefault();
+      event.stopImmediatePropagation();
+      const h = Math.max(100, renderer.domElement.clientHeight);
+      const orbitFactor = (Math.PI / h) * 1.2;
+      controls.rotateLeft(event.deltaX * orbitFactor);
+      controls.rotateUp(event.deltaY * orbitFactor);
+      requestRender();
+      return;
+    }
+
+    // 3. Prevent Chromium visual zoom on trackpad pinch (ctrlKey)
+    if (event.ctrlKey) {
+      if (event.cancelable) event.preventDefault();
+    }
+  };
+
   const pullPivotToSurface = (event: WheelEvent) => {
     if (event.deltaY >= 0) return;
     const rect = renderer.domElement.getBoundingClientRect();
@@ -361,6 +393,7 @@ export function createThreeScene(host: HTMLDivElement): ThreeState {
   };
   controls.addEventListener("start", cancelCameraTurn);
   SAFARI_GESTURES.forEach((name) => renderer.domElement.addEventListener(name, preventSafariGesture));
+  renderer.domElement.addEventListener("wheel", handleTrackpadGestures, { passive: false, capture: true });
   renderer.domElement.addEventListener("pointerdown", configureLayerlingMouseButtons, { capture: true });
   renderer.domElement.addEventListener("pointerup", resetLayerlingMouseButtons);
   renderer.domElement.addEventListener("pointercancel", resetLayerlingMouseButtons);
@@ -376,6 +409,7 @@ export function createThreeScene(host: HTMLDivElement): ThreeState {
   state.disposeInteractionListeners = () => {
     ownWindow?.removeEventListener("pointermove", releaseLostCameraDrags, { capture: true });
     ownWindow?.removeEventListener("blur", releaseAllCameraDrags);
+    renderer.domElement.removeEventListener("wheel", handleTrackpadGestures, { capture: true });
     renderer.domElement.removeEventListener("wheel", pullPivotToSurface, { capture: true });
     renderer.domElement.removeEventListener("wheel", countWheelNotch, { capture: true });
     renderer.domElement.removeEventListener("wheel", endWheelNotch);
