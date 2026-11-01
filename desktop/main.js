@@ -221,8 +221,12 @@ async function createWindow(port) {
       contextIsolation: true,
       sandbox: false,
       webSecurity: true,
+      scrollBounce: false, // Prevents macOS trackpad rubber-band bounce
     },
   });
+
+  // Lock Chromium visual page zoom so Mac trackpad pinch-to-zoom exclusively controls the 3D CAD canvas
+  mainWindow.webContents.setVisualZoomLevelLimits(1, 1);
 
   // Only show window when renderer has painted the first frame cleanly
   mainWindow.once('ready-to-show', () => {

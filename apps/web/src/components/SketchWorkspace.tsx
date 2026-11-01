@@ -1630,8 +1630,21 @@ export function SketchWorkspace({
     event.preventDefault();
     viewSlide.stop();
     const bounds = event.currentTarget.getBoundingClientRect();
-    const offset = { x: event.clientX - (bounds.left + bounds.width / 2), y: event.clientY - (bounds.top + bounds.height / 2) };
     const pixelsPerUnit = Math.min(bounds.width / workspace.width, bounds.height / workspace.depth);
+
+    // Two-finger pan on trackpad with Shift:
+    if (event.shiftKey && !event.ctrlKey) {
+      setView((current) => ({
+        ...current,
+        pan: {
+          x: current.pan.x - (event.deltaX || event.deltaY) / (pixelsPerUnit * current.zoom),
+          z: current.pan.z + (event.deltaX ? event.deltaY : 0) / (pixelsPerUnit * current.zoom),
+        },
+      }));
+      return;
+    }
+
+    const offset = { x: event.clientX - (bounds.left + bounds.width / 2), y: event.clientY - (bounds.top + bounds.height / 2) };
     const factor = sketchWheelZoomFactor(event, orbitControlsZoomSpeed(workspace.zoomSpeed) * SKETCH_WHEEL_ZOOM_BOOST);
     setView((current) => zoomSketchViewAt(current, factor, offset, pixelsPerUnit, workspace));
   };
