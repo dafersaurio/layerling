@@ -226,7 +226,9 @@ async function createWindow(port) {
   });
 
   // Lock Chromium visual page zoom so Mac trackpad pinch-to-zoom exclusively controls the 3D CAD canvas
-  mainWindow.webContents.setVisualZoomLevelLimits(1, 1);
+  mainWindow.webContents.on('did-finish-load', () => {
+    mainWindow.webContents.setVisualZoomLevelLimits(1, 1).catch(() => {});
+  });
 
   // Only show window when renderer has painted the first frame cleanly
   mainWindow.once('ready-to-show', () => {
@@ -244,23 +246,6 @@ async function createWindow(port) {
     return { action: 'allow' };
   });
 
-  // Handle downloads with native macOS save sheet (e.g. Export STL, STEP, OBJ, 3MF)
-  session.defaultSession.on('will-download', (event, item, webContents) => {
-    item.setSaveDialogOptions({
-      defaultPath: item.getFilename(),
-    });
-    item.on('updated', (event, state) => {
-      if (state === 'interrupted') {
-        console.log('Download interrupted');
-      }
-    });
-    item.once('done', (event, state) => {
-      if (state === 'completed') {
-        console.log('Download completed:', item.getSavePath());
-      }
-    });
-  });
-
   await mainWindow.loadURL(`http://127.0.0.1:${port}`);
 
   mainWindow.on('closed', () => {
@@ -268,8 +253,28 @@ async function createWindow(port) {
   });
 }
 
+function setupDownloads() {
+  // Handle downloads with native macOS save sheet (e.g. Export STL, STEP, OBJ, 3MF)
+  session.defaultSession.on('will-download', (event, item) => {
+    const filename = item.getFilename();
+    const defaultPath = path.join(app.getPath('downloads'), filename);
+    item.setSaveDialogOptions({ defaultPath });
+    item.on('updated', (_event, state) => {
+      if (state === 'interrupted') {
+        console.log('Download interrupted');
+      }
+    });
+    item.once('done', (_event, state) => {
+      if (state === 'completed') {
+        console.log('Download completed:', item.getSavePath());
+      }
+    });
+  });
+}
+
 app.whenReady().then(async () => {
   createMenu();
+  setupDownloads();
   try {
     const port = await startLocalServer();
     await createWindow(port);
