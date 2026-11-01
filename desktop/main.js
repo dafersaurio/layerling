@@ -212,15 +212,21 @@ async function createWindow(port) {
     height: 900,
     minWidth: 900,
     minHeight: 600,
+    show: false, // Prevents showing until initial paint is complete (no white/black flash or unstyled blur)
     title: 'Layerling - 3D CAD',
     icon: path.join(__dirname, 'build', 'icon.icns'),
+    backgroundColor: '#fafaf9',
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
       sandbox: false,
       webSecurity: true,
     },
-    backgroundColor: '#1a1a1a',
+  });
+
+  // Only show window when renderer has painted the first frame cleanly
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.show();
   });
 
   // Open external links in default browser

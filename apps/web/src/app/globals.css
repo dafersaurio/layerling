@@ -528,7 +528,7 @@ button {
   min-width: 320px;
   overflow: hidden;
   background: #fbfaf8;
-  animation: editor-loading-enter 160ms ease-out both;
+  animation: none;
 }
 
 .editor-skeleton-shimmer {
@@ -690,14 +690,7 @@ button {
 }
 
 .editor-loading-viewport::after {
-  position: absolute;
-  top: 52%;
-  left: 50%;
-  width: min(64vw, 760px);
-  height: min(48vw, 520px);
-  content: "";
-  background: radial-gradient(ellipse, rgba(99, 79, 58, 0.09), transparent 68%);
-  transform: translate(-50%, -50%);
+  display: none;
 }
 
 .editor-loading-model {
