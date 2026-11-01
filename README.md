@@ -18,7 +18,14 @@
     <a href="LICENSE"><img alt="GNU AGPLv3 license" src="https://img.shields.io/badge/license-AGPLv3-663399"></a>
     <img alt="macOS Apple Silicon" src="https://img.shields.io/badge/macOS-Apple%20Silicon%20(arm64)-000000?logo=apple">
     <img alt="100% Offline" src="https://img.shields.io/badge/offline-100%25%20local-success">
+    <img alt="No Localhost" src="https://img.shields.io/badge/network-zero%20ports%20(no%20localhost)-brightgreen">
     <img alt="Pure CAD" src="https://img.shields.io/badge/UI-distraction--free-blue">
+  </p>
+
+  <p>
+    <a href="https://github.com/dafersaurio/layerling/releases/download/v1.129.1-macos/Layerling.dmg">
+      <img src="https://img.shields.io/badge/Download_Installer-Layerling.dmg_(v1.129.1)-2ea44f?style=for-the-badge&logo=apple&logoColor=white" alt="Download Layerling.dmg">
+    </a>
   </p>
 
   <p><strong>Forked from <a href="https://github.com/henmedia/layerling">henmedia/layerling</a> under GNU AGPLv3.</strong></p>
@@ -27,10 +34,12 @@
 ---
 
 ### ✨ Features of this Desktop Fork
-* 🚀 **Direct-to-CAD Startup:** Boots directly into an active 3D CAD workspace. No welcome screens, no tutorials to click through.
+* 🚀 **Direct-to-CAD Startup:** Boots cleanly and directly into an active 3D CAD workspace with zero startup blur or window flashes.
+* 🔒 **Zero Localhost / Pure Native Protocol:** Runs purely off Electron's native `app://layerling` protocol without opening any TCP ports or loopback servers. No firewall prompts, no network footprint.
+* 🖱️ **Optimized for Mac Trackpad:** Built-in 2-finger panning (`Shift`), orbit (`Option`), smooth pinch-to-zoom without Chromium page-zoom locks, and rubber-band bounce prevention.
 * 🧼 **De-cluttered Interface:** All guide links (`?`), tutorial overlays, backup warning banners, and promotional footers have been stripped out. Only pure CAD design remains.
-* 📦 **Standalone macOS `.dmg`:** Packaged natively with Electron and an embedded zero-configuration loopback server. Supports OpenCASCADE WebAssembly (`occt-wasm`) and `manifold-3d` kernels 100% offline.
-* 💾 **Local Persistence:** Projects are saved locally and securely via native persistent storage without requiring accounts or cloud synchronization.
+* 📦 **Standalone macOS `.dmg`:** Packaged natively with Electron and ad-hoc codesigning. Supports OpenCASCADE WebAssembly (`occt-wasm`) and `manifold-3d` kernels 100% offline.
+* 💾 **Local Persistence & Export:** Projects are saved locally and securely via `IndexedDB` and `localStorage`. Full native export support for **STL**, **STEP**, **3MF**, **OBJ**, **SVG**, and **DXF**.
 
 ### 🛠️ Building the macOS DMG Locally
 ```bash
