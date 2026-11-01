@@ -44,6 +44,12 @@ npm run desktop:build
 # dist/Layerling.dmg
 ```
 
+> **Note for macOS users downloading from GitHub Releases:**
+> Since this open-source build uses ad-hoc codesigning, macOS Gatekeeper may flag it on first download. To open it without warnings, simply drag it to `/Applications` and run:
+> ```bash
+> xattr -cr /Applications/Layerling.app
+> ```
+
 ---
 
   <p>

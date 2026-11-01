@@ -6,21 +6,36 @@ const mime = require('mime-types');
 
 // Base directory for static files
 const WEB_DIR = path.join(__dirname, 'web');
+const PREFERRED_PORT = 39281;
 
 let mainWindow = null;
 let server = null;
-let serverPort = 0;
+let serverPort = PREFERRED_PORT;
+
+// Enforce single instance so multiple launches focus the existing app
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
+  });
+}
 
 function startLocalServer() {
   return new Promise((resolve, reject) => {
     server = http.createServer((req, res) => {
       try {
-        const parsedUrl = new URL(req.url, `http://127.0.0.1:${serverPort || 3000}`);
+        const parsedUrl = new URL(req.url, `http://127.0.0.1:${serverPort}`);
         let decodedPath = decodeURIComponent(parsedUrl.pathname);
 
         // Security check: prevent directory traversal
         let filePath = path.normalize(path.join(WEB_DIR, decodedPath));
-        if (!filePath.startsWith(WEB_DIR)) {
+        const rel = path.relative(WEB_DIR, filePath);
+        if (rel.startsWith('..') || path.isAbsolute(rel)) {
           res.writeHead(403);
           res.end('Access Denied');
           return;
@@ -41,9 +56,13 @@ function startLocalServer() {
             filePath = `${filePath}.html`;
           } else if (fs.existsSync(path.join(filePath, 'index.html'))) {
             filePath = path.join(filePath, 'index.html');
-          } else {
-            // Fallback to index.html for SPA / client-side routing if not found
+          } else if (!path.extname(decodedPath)) {
+            // Only fallback to index.html for extension-less client routes (SPA)
             filePath = path.join(WEB_DIR, 'index.html');
+          } else {
+            res.writeHead(404, { 'Content-Type': 'text/plain' });
+            res.end('Not Found');
+            return;
           }
         }
 
@@ -75,16 +94,30 @@ function startLocalServer() {
       }
     });
 
-    // Listen on random available port on localhost only
-    server.listen(0, '127.0.0.1', () => {
-      serverPort = server.address().port;
-      console.log(`Layerling local server running at http://127.0.0.1:${serverPort}`);
-      resolve(serverPort);
-    });
+    const tryListen = (port, retriesLeft = 10) => {
+      const onError = (err) => {
+        server.removeListener('listening', onListening);
+        if (err.code === 'EADDRINUSE' && retriesLeft > 0) {
+          console.warn(`Layerling port ${port} busy, trying port ${port + 1}...`);
+          tryListen(port + 1, retriesLeft - 1);
+        } else {
+          reject(err);
+        }
+      };
 
-    server.on('error', (err) => {
-      reject(err);
-    });
+      const onListening = () => {
+        server.removeListener('error', onError);
+        serverPort = server.address().port;
+        console.log(`Layerling local server running at http://127.0.0.1:${serverPort}`);
+        resolve(serverPort);
+      };
+
+      server.once('error', onError);
+      server.once('listening', onListening);
+      server.listen(port, '127.0.0.1');
+    };
+
+    tryListen(PREFERRED_PORT);
   });
 }
 
@@ -201,9 +234,11 @@ async function createWindow(port) {
     return { action: 'allow' };
   });
 
-  // Handle downloads (e.g. Export STL, STEP, OBJ, 3MF)
+  // Handle downloads with native macOS save sheet (e.g. Export STL, STEP, OBJ, 3MF)
   session.defaultSession.on('will-download', (event, item, webContents) => {
-    // Show standard macOS save dialog for downloads
+    item.setSaveDialogOptions({
+      defaultPath: item.getFilename(),
+    });
     item.on('updated', (event, state) => {
       if (state === 'interrupted') {
         console.log('Download interrupted');
